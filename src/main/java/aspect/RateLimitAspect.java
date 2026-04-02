@@ -1,6 +1,9 @@
 package aspect;
 
+import annotations.Ratelimit;
 import core.RateLimiter;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 import resolver.KeyResolver;
@@ -17,6 +20,18 @@ public class RateLimitAspect {
         this.keyResolver = keyResolver;
     }
 
+    @Around("@annotation(ratelimit)")
+    public Object enforceRateLimit(ProceedingJoinPoint proceedingJoinPoint, Ratelimit ratelimit) throws Throwable {
+
+        String key = keyResolver.resolve(proceedingJoinPoint, ratelimit);
+
+        boolean allowed = rateLimiter.isAllowed(ratelimit.capacity(),ratelimit.refillRate(), key);
+
+        if (!allowed) {
+            throw new RuntimeException("Rate limited exceeded for: " + key);
+        }
+        return proceedingJoinPoint.proceed();
+    }
 
 
 
