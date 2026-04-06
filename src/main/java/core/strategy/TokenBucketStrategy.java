@@ -1,6 +1,7 @@
 package core.strategy;
 
 import core.config.RateLimitConfig;
+import core.model.Algorithm;
 import core.model.BucketState;
 import core.store.RateLimitStore;
 
@@ -10,6 +11,12 @@ import static java.lang.Math.min;
 
 
 public class TokenBucketStrategy implements RateLimiterStrategy {
+
+
+    @Override
+    public Algorithm getAlgorithm() {
+        return Algorithm.TOKEN_BUCKET;
+    }
 
     @Override
     public boolean allow(String key, RateLimitConfig config, RateLimitStore store) {
