@@ -1,6 +1,8 @@
 package annotations;
 
 
+import core.model.Algorithm;
+
 import java.lang.annotation.*;
 
 
@@ -9,6 +11,10 @@ import java.lang.annotation.*;
 @Documented
 public @interface RateLimit {
 
+    /**
+     * Type of algorithm defined by user. By default token bucket.
+     */
+    Algorithm algorithm() default Algorithm.TOKEN_BUCKET;
 
     /**
      * Capacity of the bucket to hold tokens.
@@ -16,7 +22,7 @@ public @interface RateLimit {
     int capacity() default 10;
 
     /**
-     *
+     * Rate by which token should be refilled.
      */
     int refillRate() default 5;
 
