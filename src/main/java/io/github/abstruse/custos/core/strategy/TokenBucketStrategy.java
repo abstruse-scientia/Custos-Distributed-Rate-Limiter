@@ -3,10 +3,12 @@ package com.abstruse.custos.core.strategy;
 import com.abstruse.custos.core.config.RateLimitConfig;
 import com.abstruse.custos.core.model.Algorithm;
 import com.abstruse.custos.core.model.BucketState;
+import com.abstruse.custos.core.model.RateLimitDecision;
 import com.abstruse.custos.core.store.RateLimitStore;
 
 import java.util.Objects;
 
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 
@@ -19,7 +21,7 @@ public class TokenBucketStrategy implements RateLimiterStrategy {
     }
 
     @Override
-    public boolean allow(String key, RateLimitConfig config, RateLimitStore store) {
+    public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
 
         synchronized (key.intern()) {
             BucketState state = store.get(key);
@@ -34,17 +36,18 @@ public class TokenBucketStrategy implements RateLimiterStrategy {
             long elapsed = (now - Objects.requireNonNull(state).getLastRefillTime() ) / 1000;
             double tokensToAdd =  elapsed * config.getRefillRate();
 
-            double tokens = min(config.getCapacity(), config.getCapacity() + tokensToAdd);
+            double tokens = min(config.getCapacity(), state.getTokens() + tokensToAdd);
             state.setTokens(tokens);
             state.setLastRefillTime(now);
 
             if (state.getTokens() >= 1) {
                 state.setTokens(state.getTokens() - 1); // decrease token count
                 store.put(key, state); // update the store , to keep the most recent state with key
-                return true;
+                return new RateLimitDecision(true, 0);
             }
+            long retryAfterSeconds = max(1, Math.round((float) 1 / config.getRefillRate()));
             store.put(key, state);
-            return false;
+            return new  RateLimitDecision(false, retryAfterSeconds);
 
         }
     }

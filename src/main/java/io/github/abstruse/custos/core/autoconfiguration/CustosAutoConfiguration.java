@@ -4,6 +4,8 @@ import com.abstruse.custos.core.config.ConfigResolver;
 import com.abstruse.custos.core.config.CustosMainProperties;
 import com.abstruse.custos.core.config.CustosProperties;
 import com.abstruse.custos.core.engine.RateLimiterEngine;
+import com.abstruse.custos.core.store.InMemoryStore;
+import com.abstruse.custos.core.store.RateLimitStore;
 import com.abstruse.custos.core.strategy.RateLimiterStrategy;
 import com.abstruse.custos.core.strategy.StrategyFactory;
 import com.abstruse.custos.core.strategy.TokenBucketStrategy;
@@ -118,6 +120,11 @@ public class CustosAutoConfiguration {
             return new ConfigResolver(props);
         }
 
+        //  ---------- STORE ----------
+        @Bean
+        @ConditionalOnMissingBean
+        public RateLimitStore store() {return new InMemoryStore();}
+
         // ---------- ENGINE ----------
 
         @Bean
@@ -125,13 +132,15 @@ public class CustosAutoConfiguration {
         public RateLimiterEngine engine(
                 KeyResolverFactory resolverFactory,
                 ConfigResolver configResolver,
-                StrategyFactory strategyFactory
+                StrategyFactory strategyFactory,
+                RateLimitStore store
         ) {
             return new RateLimiterEngine(
 
                     resolverFactory,
                     configResolver,
-                    strategyFactory
+                    strategyFactory,
+                    store
             );
         }
 }
