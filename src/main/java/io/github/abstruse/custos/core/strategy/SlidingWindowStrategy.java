@@ -2,6 +2,7 @@ package com.abstruse.custos.core.strategy;
 
 import com.abstruse.custos.core.config.RateLimitConfig;
 import com.abstruse.custos.core.model.Algorithm;
+import com.abstruse.custos.core.model.RateLimitDecision;
 import com.abstruse.custos.core.store.RateLimitStore;
 
 public class SlidingWindowStrategy implements RateLimiterStrategy {
@@ -12,7 +13,8 @@ public class SlidingWindowStrategy implements RateLimiterStrategy {
     }
 
     @Override
-    public boolean allow(String key, RateLimitConfig config, RateLimitStore store) {
-        return false;
+    public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
+
+        return new RateLimitDecision(false, 0);
     }
 }

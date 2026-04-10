@@ -19,13 +19,16 @@ else
 
 end
 local allowed = 0
+local retryAfterSeconds
 if token >= 1 then
     token = token - 1
     allowed = 1
+else
+    retryAfterSeconds = math.max(1, math.ceil(1 / lastRefillTime))
 end
 
 redis.call("HMSET", key, "tokens", token  , "lastRefillTime", now)
 
 redis.call("PEXPIRE", key, 60000)
 
-return allowed
+return { allowed, retryAfterSeconds }

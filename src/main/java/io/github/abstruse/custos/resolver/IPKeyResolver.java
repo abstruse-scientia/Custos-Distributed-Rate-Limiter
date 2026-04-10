@@ -11,6 +11,6 @@ public class IPKeyResolver implements KeyResolver {
 
     @Override
     public String resolve(RequestContext context) {
-        return context.getUserId();
+        return context.getIpAddress();
     }
 }

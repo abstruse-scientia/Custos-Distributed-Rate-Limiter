@@ -2,7 +2,10 @@ package com.abstruse.custos.aop;
 
 import com.abstruse.custos.annotations.RateLimit;
 import com.abstruse.custos.core.engine.RateLimiterEngine;
+import com.abstruse.custos.core.model.RateLimitDecision;
 import com.abstruse.custos.core.model.RequestContext;
+import com.abstruse.custos.exception.RateLimitExceededException;
+import com.abstruse.custos.resolver.KeyType;
 import com.abstruse.custos.utility.CustosIPResolver;
 import com.abstruse.custos.utility.CustosUserResolver;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,15 +34,21 @@ public class RateLimitAspect {
 
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
-            return "unknown";
+            throw new IllegalStateException("Active ServletRequestAttributes required");
         }
         RequestContext requestContext = getRequestContext(attributes);
 
 
-        boolean allowed = engine.allow(requestContext, rateLimit);
+        RateLimitDecision decision = engine.allow(requestContext, rateLimit);
 
-        if (!allowed) {
-            throw new RuntimeException("Rate limited exceeded for");
+        if (!decision.allow()) {
+
+            String key = rateLimit.keytype() == KeyType.USER ?
+                    requestContext.getUserId() : requestContext.getIpAddress();
+            throw new RateLimitExceededException(
+                    key,
+                    decision.retryAfterSeconds()
+            );
         }
         return proceedingJoinPoint.proceed();
     }
