@@ -4,37 +4,102 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.abstruse</groupId>
+
+
+    <!--  Basic Project Information  -->
+    <groupId>io.github.abstruse-scientia</groupId>
     <artifactId>custos</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <!--  Project Metadata (For Maven Central)  -->
+    <name>Custos Rate Limiter</name>
+    <description>
+        Lightweight, distributed rate limiter library for Spring Boot.
+        Provides zero boilerplate rate limiting with support for in-memory and Redis backends.
+        Includes Token Bucket and Sliding Window algorithms with atomic Lua-based operations.
+    </description>
+    <url>https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter</url>
+
+    <!--License Information (For Maven Central)    -->
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!--    Developers & Contact (For Maven Central) -->
+    <developers>
+        <developer>
+            <name>Priyanshu Singh</name>
+            <email>125831066+abstruse-scientia@users.noreply.github.com</email>
+            <organization>Github</organization>
+            <organizationUrl>https://github.com/abstruse-scientia</organizationUrl>
+            <roles>
+                <role>Lead Developer</role>
+            </roles>
+            <timezone>IST</timezone>
+        </developer>
+    </developers>
+    <!--    Source Control (For Maven Central)-->
+    <scm>
+        <connection>scm:git:https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:abstruse-scientia/Custos-Distributed-Rate-Limiter.git</developerConnection>
+        <url>https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <!-- Issue Tracking (Optional for Maven Central) -->
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter/issues</url>
+    </issueManagement>
+
+
+    <!-- Spring Boot parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.13</version>
         <relativePath/>
     </parent>
+
     <properties>
-        <maven.compiler.source>23</maven.compiler.source>
-        <maven.compiler.target>23</maven.compiler.target>
+        <!-- Fixed: Java 23 -> Java 11 LTS  -->
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Plugin versions for consistency -->
+        <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
+        <maven.javadoc.plugin.version>3.6.2</maven.javadoc.plugin.version>
+        <maven.gpg.plugin.version>3.1.0</maven.gpg.plugin.version>
     </properties>
 
+
     <dependencies>
+        <!-- Spring Boot AOP (Required) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- Redis support optional (user can exclude if not needed) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+            <optional>true</optional>
         </dependency>
 
+        <!-- Required auto configuration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
+        <!-- Optional: Configuration processor for IDE support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -43,22 +108,78 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>annotationProcessor</scope>
+            <scope>provided</scope>
         </dependency>
+        <!-- Required: Web support (Core library depends on ServletRequestAttributes) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
+
+        <!-- Optional: Embedded Redis for Integration tests -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
+
+
+    <!--BUILD CONFIGURATION -->
+
+    <build>
+        <plugins>
+            <!-- Maven Source Plugin (For maven central)-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Maven Javadoc Plugin (Required for maven central) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.11.2</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <charset>UTF-8</charset>
+                    <encoding>UTF-8</encoding>
+                    <docencoding>UTF-8</docencoding>
+                    <additionalJOption>-Xdoclint:none</additionalJOption>
+                </configuration>
+            </plugin>
+
+
+        </plugins>
+    </build>
+
+
+
 
 </project>
