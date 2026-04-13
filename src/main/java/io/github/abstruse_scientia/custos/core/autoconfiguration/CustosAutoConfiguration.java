@@ -14,10 +14,8 @@ import io.github.abstruse_scientia.custos.resolver.IPKeyResolver;
 import io.github.abstruse_scientia.custos.resolver.KeyResolver;
 import io.github.abstruse_scientia.custos.resolver.KeyResolverFactory;
 import io.github.abstruse_scientia.custos.resolver.UserKeyResolver;
-import io.github.abstruse_scientia.custos.utility.CustosUserResolver;
-import io.github.abstruse_scientia.custos.utility.CustosIPResolver;
-import io.github.abstruse_scientia.custos.utility.DefaultCustosIPResolver;
-import io.github.abstruse_scientia.custos.utility.DefaultCustosUserResolver;
+import io.github.abstruse_scientia.custos.utility.*;
+import io.github.abstruse_scientia.custos.utility.UserIdResolver;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,20 +31,32 @@ import java.util.List;
 
 public class CustosAutoConfiguration {
 
-        // ---------- USER RESOLVER ----
-
+        // ---------- USER ID PROVIDER (Framework Agnostic) ----
 
         /**
-         * Runs only if user does not provide their own resolver.
-         * Provides defaults for common deployment scenarios
-         * - Spring Security Context holder holding User
-         * - Reading header request
+         * Spring Security implementation of UserIdResolver.
+         * Runs only if Spring Security is on the classpath.
          */
         @Bean
-        @ConditionalOnMissingBean(CustosUserResolver.class)
-        public CustosUserResolver  custosUserResolver() {
-            return new DefaultCustosUserResolver();
+        @ConditionalOnClass(name = "org.springframework.security.core.context.SecurityContextHolder")
+        @ConditionalOnMissingBean(UserIdResolver.class)
+        public UserIdResolver springSecurityUserIdProvider() {
+            return new SpringSecurityUserIdResolver();
         }
+
+        /**
+         * Fallback no-op UserIdResolver.
+         * Runs only if:
+         * - Spring Security is NOT on the classpath
+         * - User has not provided their own UserIdResolver bean
+         * - User only wants IP-based rate limiting
+         */
+        @Bean
+        @ConditionalOnMissingBean(UserIdResolver.class)
+        public UserIdResolver noOpUserIdProvider() {
+            return new NoOpUserIdResolver();
+        }
+
 
         // ---------- IP RESOLVER ----
 

@@ -7,14 +7,12 @@ import io.github.abstruse_scientia.custos.core.model.RequestContext;
 import io.github.abstruse_scientia.custos.exception.RateLimitExceededException;
 import io.github.abstruse_scientia.custos.resolver.KeyType;
 import io.github.abstruse_scientia.custos.utility.CustosIPResolver;
-import io.github.abstruse_scientia.custos.utility.CustosUserResolver;
+import io.github.abstruse_scientia.custos.utility.UserIdResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -25,7 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class RateLimitAspect {
 
     private final RateLimiterEngine engine;
-    private final CustosUserResolver userResolver;
+    private final UserIdResolver userIdResolver;
     private final CustosIPResolver ipResolver;
 
 
@@ -55,11 +53,9 @@ public class RateLimitAspect {
 
     private RequestContext getRequestContext(ServletRequestAttributes attributes) {
         HttpServletRequest request = attributes.getRequest();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userId = userResolver.resolverUserId(request, authentication);
+        String userId = userIdResolver.getUserId(request);
         String userIP = ipResolver.resolveClientIP(request);
-        return new  RequestContext(userId, userIP);
-
+        return new RequestContext(userId, userIP);
     }
 
 

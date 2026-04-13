@@ -124,6 +124,13 @@
 
         <!-- OPTIONAL SCOPE (Chosen by User) -->
 
+        <!-- Spring Security (optional - only needed for user-based rate limiting with Spring Security) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Redis support optional (user can exclude if not needed) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -293,6 +300,12 @@
                     <source>17</source>
                     <target>17</target>
                     <encoding>UTF-8</encoding>
+                    <annotationProcessorPaths>
+                        <annotationProcessorPath>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </annotationProcessorPath>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
