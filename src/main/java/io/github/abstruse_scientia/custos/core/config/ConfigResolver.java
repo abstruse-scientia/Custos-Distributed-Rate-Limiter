@@ -16,7 +16,7 @@ public class ConfigResolver {
 
         //same for refill rate
 
-        int refillRate = annotation.refillRate() > 0
+        double refillRate = annotation.refillRate() > 0
                 ? annotation.refillRate() : custosProperties.getRefillRate();
 
         return new RateLimitConfig(capacity, refillRate);

@@ -10,5 +10,5 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 public class RateLimitConfig {
 
     private final int capacity;
-    private final int refillRate;
+    private final double refillRate;
 }

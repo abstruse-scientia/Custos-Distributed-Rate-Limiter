@@ -30,6 +30,6 @@ public @interface RateLimit {
     /**
      * Rate by which token should be refilled.
      */
-    int refillRate() default 5;
+    double refillRate() default 5;
 
 }

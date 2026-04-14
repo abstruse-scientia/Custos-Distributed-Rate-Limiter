@@ -12,6 +12,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 
+
 public class TokenBucketStrategy implements RateLimiterStrategy {
 
 
@@ -33,7 +34,7 @@ public class TokenBucketStrategy implements RateLimiterStrategy {
             //refill the bucket based on time elapsed
             //Calculate the elapsed time by calling last Refill time
 
-            long elapsed = (now - Objects.requireNonNull(state).getLastRefillTime() ) / 1000;
+            double elapsed = (now - Objects.requireNonNull(state).getLastRefillTime() ) / 1000.0;
             double tokensToAdd =  elapsed * config.getRefillRate();
 
             double tokens = min(config.getCapacity(), state.getTokens() + tokensToAdd);
