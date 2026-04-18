@@ -10,48 +10,59 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
-
-public class RedisTokenBucketStrategy implements RateLimiterStrategy {
+public class RedisSlidingWindowStrategy implements RateLimiterStrategy {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final DefaultRedisScript<List<Long>> redisScript;
 
-    private static final String LUA_SCRIPT = "LUA_SCRIPT_TOKEN_BUCKET";
+
+    private static final String LUA_SCRIPT = "LUA_SCRIPT_SLIDING_WINDOW";
+
 
     @SuppressWarnings("unchecked")
-    public RedisTokenBucketStrategy(StringRedisTemplate redisTemplate) {
+    public RedisSlidingWindowStrategy(StringRedisTemplate redisTemplate) {
         this.stringRedisTemplate = redisTemplate;
         this.redisScript = new DefaultRedisScript<>();
         this.redisScript.setScriptText(LUA_SCRIPT);
-        this.redisScript.setResultType((Class<List<Long>>) (Class<?>) List.class); // Type Erasure: Leads to
-        // IntelliJ warnings. Therefore @SuppressWarnings
+        this.redisScript.setResultType((Class<List<Long>>) (Class<?>) List.class);
     }
 
     @Override
     public Algorithm getAlgorithm() {
-        return Algorithm.TOKEN_BUCKET;
-
+        return Algorithm.SLIDING_WINDOW;
     }
 
     @Override
     public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
-        int requestedAmount = 1;
-        List<Long> result =  stringRedisTemplate.execute(
+        // Calculate window duration in milliseconds
+        long windowDurationMs = (long) ((config.getCapacity() / config.getRate()) * 1000);
+        long now = System.currentTimeMillis();
+        String uniqueMember = now + ":" + UUID.randomUUID();
+        // Execute Lua script atomically
+        List<Long> result = stringRedisTemplate.execute(
                 redisScript,
                 Collections.singletonList(buildKey(key)),
                 String.valueOf(config.getCapacity()),
-                String.valueOf(config.getRate()),
-                String.valueOf(System.currentTimeMillis()),
-                requestedAmount
+                String.valueOf(windowDurationMs),
+                String.valueOf(now),
+                uniqueMember
         );
-        boolean allow = result.get(0) == 1;
+
+        boolean allowed = result.get(0) == 1;
         long retryAfterSeconds = result.get(1);
-        return new RateLimitDecision(allow, retryAfterSeconds);
+
+        return new RateLimitDecision(allowed, retryAfterSeconds);
     }
 
+    /**
+     * Builds Redis key with namespace prefix
+     * Format: custos:rswl:{originalKey}
+     * rswl = redis sliding window limit
+     */
     private String buildKey(String key) {
-        return "custos:rrl:" + key;
+        return "custos:rswl:" + key;
     }
-
 }
+

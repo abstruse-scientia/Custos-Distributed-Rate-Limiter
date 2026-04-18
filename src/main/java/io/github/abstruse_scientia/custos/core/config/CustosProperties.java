@@ -9,6 +9,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 public class CustosProperties {
 
-    private int capacity = 50;
-    private double refillRate = 10;
+    private int capacity = 10;
+    private double rate = 5;
 }
