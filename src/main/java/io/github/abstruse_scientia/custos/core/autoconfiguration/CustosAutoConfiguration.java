@@ -9,7 +9,11 @@ import io.github.abstruse_scientia.custos.core.store.RateLimitStore;
 import io.github.abstruse_scientia.custos.core.strategy.RateLimiterStrategy;
 import io.github.abstruse_scientia.custos.core.strategy.StrategyFactory;
 import io.github.abstruse_scientia.custos.core.strategy.TokenBucketStrategy;
+import io.github.abstruse_scientia.custos.core.strategy.SlidingWindowStrategy;
+import io.github.abstruse_scientia.custos.core.strategy.LeakyBucketStrategy;
 import io.github.abstruse_scientia.custos.core.strategy.redis.RedisTokenBucketStrategy;
+import io.github.abstruse_scientia.custos.core.strategy.redis.RedisSlidingWindowStrategy;
+import io.github.abstruse_scientia.custos.core.strategy.redis.RedisLeakyBucketStrategy;
 import io.github.abstruse_scientia.custos.resolver.IPKeyResolver;
 import io.github.abstruse_scientia.custos.resolver.KeyResolver;
 import io.github.abstruse_scientia.custos.resolver.KeyResolverFactory;
@@ -23,6 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
+
 
 import java.util.List;
 
@@ -114,7 +119,47 @@ public class CustosAutoConfiguration {
             return new RedisTokenBucketStrategy(redisTemplate);
         }
 
-        // ---------- STRATEGY FACTORY ----------
+        // ---------- SLIDING WINDOW STRATEGIES ----------
+
+        @Bean
+        @ConditionalOnProperty(
+                name = "custos.store",
+                havingValue = "memory",
+                matchIfMissing = true
+        )
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy inMemorySlidingWindow() {
+            return new SlidingWindowStrategy();
+        }
+
+        @Bean
+        @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
+        @ConditionalOnClass(StringRedisTemplate.class)
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy redisSlidingWindow(StringRedisTemplate redisTemplate) {
+            return new RedisSlidingWindowStrategy(redisTemplate);
+        }
+
+        // ---------- LEAKY BUCKET STRATEGIES ----------
+
+        @Bean
+        @ConditionalOnProperty(
+                name = "custos.store",
+                havingValue = "memory",
+                matchIfMissing = true
+        )
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy inMemoryLeakyBucket() {
+            return new LeakyBucketStrategy();
+        }
+
+        @Bean
+        @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
+        @ConditionalOnClass(StringRedisTemplate.class)
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy redisLeakyBucket(StringRedisTemplate redisTemplate) {
+            return new RedisLeakyBucketStrategy(redisTemplate);
+        }
 
         @Bean
         @ConditionalOnMissingBean
@@ -132,8 +177,10 @@ public class CustosAutoConfiguration {
 
         //  ---------- STORE ----------
         @Bean
+        @ConditionalOnProperty(name = "custos.store", havingValue = "memory",  matchIfMissing = true)
         @ConditionalOnMissingBean
         public RateLimitStore store() {return new InMemoryStore();}
+
 
         // ---------- ENGINE ----------
 

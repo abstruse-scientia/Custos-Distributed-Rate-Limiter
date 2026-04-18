@@ -23,13 +23,13 @@ public @interface RateLimit {
     Algorithm algorithm() default Algorithm.TOKEN_BUCKET;
 
     /**
-     * Capacity of the bucket to hold tokens.
+     * Max request allowed
      */
     int capacity() default 10;
 
     /**
-     * Rate by which token should be refilled.
+     * Request allowed per second
      */
-    double refillRate() default 5;
+    double rate() default 5;
 
 }

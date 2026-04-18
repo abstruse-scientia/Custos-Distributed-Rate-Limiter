@@ -12,46 +12,50 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class RedisTokenBucketStrategy implements RateLimiterStrategy {
+public class RedisLeakyBucketStrategy implements RateLimiterStrategy {
 
     private final StringRedisTemplate stringRedisTemplate;
     private final DefaultRedisScript<List<Long>> redisScript;
 
-    private static final String LUA_SCRIPT = "LUA_SCRIPT_TOKEN_BUCKET";
+    private static final String LUA_SCRIPT = "LUA_SCRIPT_LEAKY_BUCKET";
 
     @SuppressWarnings("unchecked")
-    public RedisTokenBucketStrategy(StringRedisTemplate redisTemplate) {
+    public RedisLeakyBucketStrategy(StringRedisTemplate redisTemplate) {
         this.stringRedisTemplate = redisTemplate;
         this.redisScript = new DefaultRedisScript<>();
         this.redisScript.setScriptText(LUA_SCRIPT);
-        this.redisScript.setResultType((Class<List<Long>>) (Class<?>) List.class); // Type Erasure: Leads to
-        // IntelliJ warnings. Therefore @SuppressWarnings
+        this.redisScript.setResultType((Class<List<Long>>) (Class<?>) List.class);
     }
 
     @Override
     public Algorithm getAlgorithm() {
-        return Algorithm.TOKEN_BUCKET;
-
+        return Algorithm.LEAKY_BUCKET;
     }
 
     @Override
     public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
-        int requestedAmount = 1;
-        List<Long> result =  stringRedisTemplate.execute(
+        // Execute Lua script atomically
+        List<Long> result = stringRedisTemplate.execute(
                 redisScript,
                 Collections.singletonList(buildKey(key)),
                 String.valueOf(config.getCapacity()),
                 String.valueOf(config.getRate()),
-                String.valueOf(System.currentTimeMillis()),
-                requestedAmount
+                String.valueOf(System.currentTimeMillis())
         );
-        boolean allow = result.get(0) == 1;
+
+        boolean allowed = result.get(0) == 1;
         long retryAfterSeconds = result.get(1);
-        return new RateLimitDecision(allow, retryAfterSeconds);
+
+        return new RateLimitDecision(allowed, retryAfterSeconds);
     }
 
+    /**
+     * Builds Redis key with namespace prefix
+     * Format: custos:rlb:{originalKey}
+     * rlb = redis leaky bucket
+     */
     private String buildKey(String key) {
-        return "custos:rrl:" + key;
+        return "custos:rlb:" + key;
     }
-
 }
+
