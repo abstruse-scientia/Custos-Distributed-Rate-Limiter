@@ -6,11 +6,8 @@ import io.github.abstruse_scientia.custos.core.config.CustosProperties;
 import io.github.abstruse_scientia.custos.core.engine.RateLimiterEngine;
 import io.github.abstruse_scientia.custos.core.store.InMemoryStore;
 import io.github.abstruse_scientia.custos.core.store.RateLimitStore;
-import io.github.abstruse_scientia.custos.core.strategy.RateLimiterStrategy;
-import io.github.abstruse_scientia.custos.core.strategy.StrategyFactory;
-import io.github.abstruse_scientia.custos.core.strategy.TokenBucketStrategy;
-import io.github.abstruse_scientia.custos.core.strategy.SlidingWindowStrategy;
-import io.github.abstruse_scientia.custos.core.strategy.LeakyBucketStrategy;
+import io.github.abstruse_scientia.custos.core.strategy.*;
+import io.github.abstruse_scientia.custos.core.strategy.redis.RedisSlidingWindowCounterStrategy;
 import io.github.abstruse_scientia.custos.core.strategy.redis.RedisTokenBucketStrategy;
 import io.github.abstruse_scientia.custos.core.strategy.redis.RedisSlidingWindowStrategy;
 import io.github.abstruse_scientia.custos.core.strategy.redis.RedisLeakyBucketStrategy;
@@ -161,11 +158,34 @@ public class CustosAutoConfiguration {
             return new RedisLeakyBucketStrategy(redisTemplate);
         }
 
+        // ------- SLIDING WINDOW COUNTER STRATEGY ---------
+        @Bean
+        @ConditionalOnProperty(
+                name = "custos.store",
+                havingValue = "memory",
+                matchIfMissing = true
+        )
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy inMemorySlidingWindowCounter() {
+            return new SlidingWindowCounterStrategy();
+        }
+
+        @Bean
+        @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
+        @ConditionalOnClass(StringRedisTemplate.class)
+        @ConditionalOnMissingBean
+        public RateLimiterStrategy redisSlidingWindowCounter(StringRedisTemplate redisTemplate) {
+            return new RedisSlidingWindowCounterStrategy(redisTemplate);
+        }
+
+
+        //-------- STRATEGY FACTORY --------
         @Bean
         @ConditionalOnMissingBean
         public StrategyFactory strategyFactory(List<RateLimiterStrategy> strategies) {
             return new StrategyFactory(strategies);
         }
+
 
         // ---------- CONFIG ----------
 
