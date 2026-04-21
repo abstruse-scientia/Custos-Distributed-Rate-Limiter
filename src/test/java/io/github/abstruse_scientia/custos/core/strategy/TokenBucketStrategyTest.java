@@ -3,128 +3,149 @@ package io.github.abstruse_scientia.custos.core.strategy;
 import io.github.abstruse_scientia.custos.core.config.RateLimitConfig;
 import io.github.abstruse_scientia.custos.core.model.BucketState;
 import io.github.abstruse_scientia.custos.core.model.RateLimitDecision;
+import io.github.abstruse_scientia.custos.core.store.InMemoryStore;
 import io.github.abstruse_scientia.custos.core.store.RateLimitStore;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit test to check basic rate limiting : Testing Token Bucket Strategy
- * 1. testTokenBucketStrategy: tests basic rate limiting
- * 2. checkBucketRefill: as the name suggests, checks if the refill rate is working properly when time lapses.
- * 3. testMultipleUsersInIsolation: rate limiter should be per user based not, global
+ * Unit tests for Token Bucket Rate Limiting Strategy
+ *
+ * Implements Category 1 - Core Algorithm Tests 1-4:
+ * 1. testBasicTokenConsumption: Verifies basic token consumption
+ * 2. testBucketRefillOverTime: Verifies bucket refills tokens over time
+ * 3. testPerUserIsolation: Confirms rate limiting is per-user, not global
+ * 4. testCapacityOverflowPrevention: Ensures tokens don't exceed capacity
  */
-
 public class TokenBucketStrategyTest {
 
-    public TokenBucketStrategy strategy;
-    public RateLimitStore store;
-    public RateLimitConfig config;
-
+    private TokenBucketStrategy strategy;
+    private RateLimitStore store;
+    private RateLimitConfig config;
 
     @BeforeEach
     public void setup() {
         strategy = new TokenBucketStrategy();
-        store = mock(RateLimitStore.class);
+        store = new InMemoryStore();
         config = mock(RateLimitConfig.class);
     }
 
-
+    /**
+     * Test 1: Basic Token Consumption
+     * Setup: Bucket with 10 token capacity, refill rate = 0 (no refill)
+     * Verify: First 10 requests pass, 11th request is rejected
+     */
     @Test
-    public void testTokenBucketStrategy() {
+    public void testBasicTokenConsumption() {
+        when(config.getCapacity()).thenReturn(10.0);
+        when(config.getRate()).thenReturn(0.0);
 
-        when(config.getCapacity()).thenReturn(10);
-        when(config.getRefillRate()).thenReturn(5.0);
-
-        // Check basic rate limiting, whether user is allowed up until the capacity(10)
-        for(int i = 0; i < 10; i++){
-            Object obj = store.get("user1");
-            BucketState userState1 = (obj instanceof BucketState) ? (BucketState) obj : null;
-            if (userState1 == null) {
-                userState1 = new BucketState(config.getCapacity(), System.currentTimeMillis());
-            }
-            when(store.get("user1")).thenReturn(userState1);
-
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow());
-        }
-        Object obj = store.get("user1");
-        BucketState userState1 = (obj instanceof BucketState) ? (BucketState) obj : null;
-        when(store.get("user1")).thenReturn(userState1);
-        RateLimitDecision decision =  strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow());
-    }
-
-
-    @Test
-    //Checking Partial Refill
-    public void checkBucketRefill() throws InterruptedException {
-
-
-        when(config.getCapacity()).thenReturn(10);
-        when(config.getRefillRate()).thenReturn(0.1);
-
-        BucketState userState1 = new BucketState(0,  System.currentTimeMillis());
-        when(store.get("user1")).thenReturn(userState1);
-
-        RateLimitDecision decision = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow());
-
-        Thread.sleep(5000);
-
-        //Refill rate is 0.1 per second . so after 5 second it should be 0.5. Therefore Reject
-        RateLimitDecision decision2 = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision2.allow());
-
-        Thread.sleep(5000);
-
-        Object obj = store.get("user1");
-        BucketState updatedSTate = (obj instanceof BucketState) ? (BucketState) obj : null;
-        when(store.get("user1")).thenReturn(updatedSTate);
-
-        RateLimitDecision decision3 = strategy.allow("user1", config, store);
-        Assertions.assertTrue(decision3.allow());
-
-    }
-
-
-    /** Check that RateLimiter is not global , but per user */
-    @Test
-    void testMultipleUsersInIsolation() {
-
-        when(config.getCapacity()).thenReturn(10);
-        when(config.getRefillRate()).thenReturn(0.1);
-
-        // Check for user 1
+        String userId = "user1";
         for (int i = 0; i < 10; i++) {
-            //Get Bucket State
-            Object obj = store.get("user1");
-            BucketState userState1 = (obj instanceof BucketState) ? (BucketState) obj : null;
-            //If Bucket Sate not initialized
-            if (userState1 == null) {
-                userState1 = new BucketState(config.getCapacity(), System.currentTimeMillis());
-            }
-            // After initialization in each iteration will get userState1 bucket
-            when(store.get("user1")).thenReturn(userState1);
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow());
+            assertThat(strategy.allow(userId, config, store).allow()).as(
+                    "Request " + (i + 1) + " should be allowed"
+            ).isTrue();
+        }
+        RateLimitDecision rejectedDecision = strategy.allow(userId, config, store);
+        assertThat(rejectedDecision.allow()).isFalse();
+
+    }
+
+    /**
+     * Test 2: Bucket Refill Over Time
+     * Setup: Initial capacity, completely consume, wait for refill 
+     * Verify: Bucket correctly accounts for elapsed time to refill tokens
+     */
+    @Test
+    public void testBucketRefillOverTime() throws InterruptedException {
+        when(config.getCapacity()).thenReturn(10.0);
+        when(config.getRate()).thenReturn(0.5);
+
+        String userId = "user1";
+        
+        for(int i = 0; i < 10; i++) {
+            strategy.allow(userId, config, store);
         }
 
-        RateLimitDecision decision = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow());
+        RateLimitDecision initialDecision = strategy.allow(userId, config, store);
+        assertThat(initialDecision.allow())
+            .as("First request with empty bucket should be rejected")
+            .isFalse();
 
-        BucketState userState2 = new BucketState(config.getCapacity(),  System.currentTimeMillis());
-        when(store.get("user2")).thenReturn(userState2);
+        Thread.sleep(4000);
 
-        for (int i = 0; i < 9; i++) {
-            RateLimitDecision decision2 = strategy.allow("user2", config, store);
-            Assertions.assertTrue(decision2.allow());
+        RateLimitDecision decision1 = strategy.allow(userId, config, store);
+        assertThat(decision1.allow())
+            .as("First request after refill should be allowed")
+            .isTrue();
+
+        RateLimitDecision decision2 = strategy.allow(userId, config, store);
+        assertThat(decision2.allow())
+            .as("Second request after refill should be allowed")
+            .isTrue();
+    }
+
+    /**
+     * Test 3: Per-User Isolation
+     * Setup: Two users, separate limits
+     * Verify: User1 consuming full allocation does not impact user2 capacity.
+     */
+    @Test
+    public void testPerUserIsolation() {
+        when(config.getCapacity()).thenReturn(5.0);
+        when(config.getRate()).thenReturn(0.0);
+
+        String user1 = "user1";
+        String user2 = "user2";
+
+        for (int i = 0; i < 5; i++) {
+            RateLimitDecision decision = strategy.allow(user1, config, store);
+            assertThat(decision.allow())
+                .as("User1 request %d should be allowed", i + 1)
+                .isTrue();
+        }
+
+        RateLimitDecision user1Rejected = strategy.allow(user1, config, store);
+        assertThat(user1Rejected.allow())
+            .as("User1 6th request should be rejected")
+            .isFalse();
+
+        for (int i = 0; i < 5; i++) {
+            RateLimitDecision decision = strategy.allow(user2, config, store);
+            assertThat(decision.allow())
+                .as("User2 request %d should be allowed (independent from user1)", i + 1)
+                .isTrue();
         }
     }
 
+    /**
+     * Test 4: Capacity Overflow Prevention
+     * Setup: Capacity = 10, current tokens = 8, refill adds 5 tokens
+     * Verify: Tokens don't exceed capacity (stay at 10, not 13)
+     */
+    @Test
+    public void testCapacityOverflowPrevention() throws InterruptedException {
+        when(config.getCapacity()).thenReturn(10.0);
+        when(config.getRate()).thenReturn(10.0);
 
+        String userId = "user1";
+        long initialTime = System.currentTimeMillis();
+
+        BucketState bucketState = new BucketState(8.0, initialTime);
+        store.put(userId, bucketState);
+
+        Thread.sleep(1000);
+
+        RateLimitDecision decision = strategy.allow(userId, config, store);
+
+        BucketState refillState = (BucketState) store.get(userId);
+
+        assertThat(refillState.getTokens())
+            .as("Bucket tokens should not exceed capacity")
+            .isLessThanOrEqualTo(10.0);
+    }
 }
