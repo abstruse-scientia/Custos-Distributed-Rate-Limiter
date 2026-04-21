@@ -9,6 +9,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties(CustosProperties.class)
 public class RateLimitConfig {
 
-    private final int capacity;
+    private final double capacity;
     private final double rate;
 }

@@ -25,15 +25,10 @@ public class TokenBucketStrategy implements RateLimiterStrategy {
     public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
 
         final RateLimitDecision[] decisionHolder = new RateLimitDecision[1];
+        long now = System.currentTimeMillis();
         store.atomicCompute(key, (k , currentState) -> {
-            Object obj = store.get(key);
-            BucketState state = (obj instanceof BucketState) ? (BucketState) obj : null;
-            
-            long now = System.currentTimeMillis();
-            if (state == null) {
-                state = new BucketState(config.getCapacity(), now);
-                store.put(key, state);
-            }
+            BucketState state = (currentState instanceof BucketState) ?
+                    (BucketState) currentState : new BucketState(config.getCapacity(), now);
 
             //refill the bucket based on time elapsed
             //Calculate the elapsed time by calling last Refill time
