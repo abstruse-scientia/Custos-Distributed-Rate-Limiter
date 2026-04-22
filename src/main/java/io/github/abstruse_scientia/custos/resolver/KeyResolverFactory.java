@@ -16,6 +16,10 @@ public class KeyResolverFactory {
     }
 
     public KeyResolver getKeyResolver(KeyType keyType) {
-        return resolverMap.get(keyType);
+        KeyResolver resolver = resolverMap.get(keyType);
+        if (resolver == null) {
+            throw new IllegalArgumentException("No KeyResolver found for KeyType: " + keyType);
+        }
+        return resolver;
     }
 }

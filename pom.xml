@@ -190,12 +190,22 @@
             <scope>test</scope>
         </dependency>
 
+
         <!-- Spring Boot TestContainers Integration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Redis client for tests -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
 
     </dependencies>
 
