@@ -14,11 +14,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for Token Bucket Rate Limiting Strategy
- *
- * Implements Category 1 - Core Algorithm Tests 1-4:
  * 1. testBasicTokenConsumption: Verifies basic token consumption
  * 2. testBucketRefillOverTime: Verifies bucket refills tokens over time
- * 3. testPerUserIsolation: Confirms rate limiting is per-user, not global
+ * 3. testPerUserIsolation: Confirms rate limiting is per user, not global
  * 4. testCapacityOverflowPrevention: Ensures tokens don't exceed capacity
  */
 public class TokenBucketStrategyTest {

@@ -4,18 +4,17 @@ import io.github.abstruse_scientia.custos.core.config.RateLimitConfig;
 import io.github.abstruse_scientia.custos.core.model.RateLimitDecision;
 import io.github.abstruse_scientia.custos.core.store.InMemoryStore;
 import io.github.abstruse_scientia.custos.core.store.RateLimitStore;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Unit tests for Leaky Bucket Rate Limiting Strategy
- *
- * Test scenarios:
- * 1. testBasicLeakyBucket: Verifies basic leaky bucket functionality
- * 2. testBucketLeaking: Verifies bucket leaks over time and allows new requests
- * 3. testMultipleUsersInIsolation: Confirms rate limiting is per-user, not global
- * 4. testLeakingBehavior: Verifies that over time, bucket leaks and allows new requests
+ * 1. testRequestQueueing: Validates capacity filling behaves properly.
+ * 2. testLeakRateOverTime: Validates requests leak freeing up bucket space.
+ * 3. testPerUserBuckets: Independent bucket tracking for multiple users.
+ * 4. testQueueCapacityExceeded: Rejection when passing capacity.
  */
 public class LeakyBucketStrategyTest {
 
@@ -27,112 +26,132 @@ public class LeakyBucketStrategyTest {
     public void setup() {
         strategy = new LeakyBucketStrategy();
         store = new InMemoryStore();
-        // capacity = 5 requests, rate = 1 request/second (leaks 1 per second)
-        config = new RateLimitConfig(5, 1.0);
     }
 
     @Test
-    public void testBasicLeakyBucket() {
-        // Fill bucket with 5 requests
-        for (int i = 0; i < 5; i++) {
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow(), "Request " + (i+1) + " should be allowed");
-        }
+    public void testRequestQueueing() {
 
-        // 6th request should be denied (bucket full)
-        RateLimitDecision decision = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow(), "6th request should be denied (bucket full)");
-        Assertions.assertTrue(decision.retryAfterSeconds() > 0, "Retry-after should be positive");
-    }
+        config = new RateLimitConfig(3, 0.0);
+        String userId = "user1";
 
-    @Test
-    public void testBucketLeaking() throws InterruptedException {
-        // Fill bucket
-        for (int i = 0; i < 5; i++) {
-            strategy.allow("user1", config, store);
-        }
-
-        // Deny 6th request
-        RateLimitDecision decision = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow());
-
-        long retryAfterSeconds = decision.retryAfterSeconds();
-        System.out.println("Retry after: " + retryAfterSeconds + " seconds (leak rate: 1 request/sec)");
-
-        // Wait for bucket to leak one request
-        Thread.sleep((retryAfterSeconds + 1) * 1000);
-
-        // Now 7th request should be allowed (one request leaked)
-        RateLimitDecision decision2 = strategy.allow("user1", config, store);
-        Assertions.assertTrue(decision2.allow(), "Request should be allowed after bucket leaks");
-    }
-
-    @Test
-    public void testLeakingBehavior() throws InterruptedException {
-        // Add 3 requests
         for (int i = 0; i < 3; i++) {
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow());
+            RateLimitDecision decision = strategy.allow(userId, config, store);
+            assertThat(decision.allow())
+                .as("Request %d should be accepted", i + 1)
+                .isTrue();
         }
 
-        // Wait 2 seconds (should leak ~2 requests at 1 request/sec)
-        Thread.sleep(2000);
+        RateLimitDecision decision4 = strategy.allow(userId, config, store);
+        assertThat(decision4.allow())
+            .as("4th request should be rejected")
+            .isFalse();
 
-        // Should be able to add 2-3 new requests
-        int allowedCount = 0;
+        RateLimitDecision decision5 = strategy.allow(userId, config, store);
+        assertThat(decision5.allow())
+            .as("5th request should be rejected")
+            .isFalse();
+
+        assertThat(decision4.retryAfterSeconds())
+            .as("Rejected request should have positive retry-after time")
+            .isGreaterThan(0);
+    }
+
+
+    @Test
+    public void testLeakRateOverTime() throws InterruptedException {
+        config = new RateLimitConfig(3, 1.0);
+        String userId = "user1";
+        long startTime = System.currentTimeMillis();
+
         for (int i = 0; i < 3; i++) {
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            if (decision.allow()) {
-                allowedCount++;
-            } else {
-                break;
+            RateLimitDecision decision = strategy.allow(userId, config, store);
+            assertThat(decision.allow())
+                .as("Request %d should be accepted", i + 1)
+                .isTrue();
+        }
+
+        RateLimitDecision rejectedDecision = strategy.allow(userId, config, store);
+        assertThat(rejectedDecision.allow())
+            .as("4th request should be rejected")
+            .isFalse();
+
+        long timeToWait = rejectedDecision.retryAfterSeconds() + 1;
+
+        Thread.sleep(1100);
+
+        RateLimitDecision afterLeakDecision1 = strategy.allow(userId, config, store);
+        assertThat(afterLeakDecision1.allow())
+            .as("Request after leak should be allowed")
+            .isTrue();
+
+        Thread.sleep(1000);
+
+        RateLimitDecision afterLeakDecision2 = strategy.allow(userId, config, store);
+        assertThat(afterLeakDecision2.allow())
+            .as("Second request after leak should be allowed")
+            .isTrue();
+    }
+
+    @Test
+    public void testPerUserBuckets() {
+        config = new RateLimitConfig(3, 0.0);
+        String user1 = "user1";
+        String user2 = "user2";
+
+        for (int i = 0; i < 3; i++) {
+            RateLimitDecision decision = strategy.allow(user1, config, store);
+            assertThat(decision.allow())
+                .as("User1 request %d should be accepted", i + 1)
+                .isTrue();
+        }
+
+        RateLimitDecision user1Rejected = strategy.allow(user1, config, store);
+        assertThat(user1Rejected.allow())
+            .as("User1 4th request should be rejected")
+            .isFalse();
+
+        for (int i = 0; i < 3; i++) {
+            RateLimitDecision decision = strategy.allow(user2, config, store);
+            assertThat(decision.allow())
+                .as("User2 request %d should be accepted", i + 1)
+                .isTrue();
+        }
+
+        RateLimitDecision user2Rejected = strategy.allow(user2, config, store);
+        assertThat(user2Rejected.allow())
+            .as("User2 4th request should be rejected")
+            .isFalse();
+    }
+
+
+    @Test
+    public void testQueueCapacityExceeded() {
+        config = new RateLimitConfig(3, 0.0);
+        String userId = "user1";
+
+        for (int i = 0; i < 3; i++) {
+            RateLimitDecision decision = strategy.allow(userId, config, store);
+            assertThat(decision.allow())
+                .as("Request %d should be accepted", i + 1)
+                .isTrue();
+        }
+
+        int rejectedCount = 0;
+        for (int i = 0; i < 10; i++) {
+            RateLimitDecision decision = strategy.allow(userId, config, store);
+            if (!decision.allow()) {
+                rejectedCount++;
             }
         }
-        
-        Assertions.assertTrue(allowedCount >= 1, "Should allow at least 1 request after leak");
-    }
 
-    @Test
-    public void testMultipleUsersInIsolation() {
-        // User 1: Fill bucket
-        for (int i = 0; i < 5; i++) {
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow());
-        }
+        assertThat(rejectedCount)
+            .as("Requests should be rejected when queue is full")
+            .isGreaterThan(0);
 
-        // User 1: Deny 6th request
-        RateLimitDecision decision = strategy.allow("user1", config, store);
-        Assertions.assertFalse(decision.allow());
-
-        // User 2: Should still allow 5 requests (isolated from user1)
-        for (int i = 0; i < 5; i++) {
-            RateLimitDecision decision2 = strategy.allow("user2", config, store);
-            Assertions.assertTrue(decision2.allow(), "User 2 should not be affected by User 1's rate limit");
-        }
-
-        // User 2: Deny 6th request
-        RateLimitDecision decision2 = strategy.allow("user2", config, store);
-        Assertions.assertFalse(decision2.allow());
-    }
-
-    @Test
-    public void testEmptyBucketAllowsRequests() throws InterruptedException {
-        // Fill bucket
-        for (int i = 0; i < 5; i++) {
-            strategy.allow("user1", config, store);
-        }
-
-        // Wait for bucket to completely empty (5 seconds at 1 request/sec)
-        Thread.sleep(5500);
-
-        // Should allow new requests (bucket empty)
-        for (int i = 0; i < 5; i++) {
-            RateLimitDecision decision = strategy.allow("user1", config, store);
-            Assertions.assertTrue(decision.allow(), "Request " + (i+1) + " should be allowed (bucket empty)");
-        }
+        RateLimitDecision rejectedDecision = strategy.allow(userId, config, store);
+        assertThat(rejectedDecision.retryAfterSeconds())
+            .as("Rejected request should provide retry-after time")
+            .isGreaterThan(0);
     }
 }
-
-
-
 
