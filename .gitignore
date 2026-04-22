@@ -41,3 +41,7 @@ build/
 ### Documentation ###
 docs/
 deployment_strategy
+fix_documentation
+
+### Logs ###
+*.log
