@@ -36,7 +36,6 @@ public class RateLimitAspect {
         }
         RequestContext requestContext = getRequestContext(attributes);
 
-
         RateLimitDecision decision = engine.allow(requestContext, rateLimit);
 
         if (!decision.allow()) {
