@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: custos-test
+  test:
+    database:
+      replace: any
+
+custos:
+  store: memory
+  token-bucket:
+    capacity: 100
+    rate: 10
+
+logging:
+  level:
+    io.github.abstruse_scientia.custos: DEBUG
