@@ -119,8 +119,8 @@ public class RateLimitAspectIntegrationTest {
 
         // User 1: Exhaust their capacity (100 requests)
         // /user-limited has capacity = 100, rate = 20
-        // Note: The refill rate means requests will succeed even after 100 due to token refill
-        // We'll verify user isolation by checking both users independently
+        // Note to self: The refill rate means requests will succeed even after 100 due to token refill
+        // We will verify user isolation by checking both users independently
         for (int i = 0; i < 50; i++) {
             mockMvc.perform(get("/api/test/v1/user-limited")
                     .header("X-User-Id", user1))

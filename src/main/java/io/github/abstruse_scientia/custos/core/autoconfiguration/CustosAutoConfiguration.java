@@ -1,5 +1,6 @@
 package io.github.abstruse_scientia.custos.core.autoconfiguration;
 
+import io.github.abstruse_scientia.custos.aop.RateLimitAspect;
 import io.github.abstruse_scientia.custos.core.config.ConfigResolver;
 import io.github.abstruse_scientia.custos.core.config.CustosMainProperties;
 import io.github.abstruse_scientia.custos.core.config.CustosProperties;
@@ -32,6 +33,18 @@ import java.util.List;
 @EnableConfigurationProperties({CustosProperties.class, CustosMainProperties.class})
 
 public class CustosAutoConfiguration {
+
+        // ----------- ASPECT -----------
+
+        @Bean
+        @ConditionalOnMissingBean
+        public RateLimitAspect rateLimitAspect(
+                RateLimiterEngine engine,
+                UserIdResolver userIdResolver,
+                CustosIPResolver ipResolver
+        ) {
+            return new RateLimitAspect(engine, userIdResolver, ipResolver);
+        }
 
         // ---------- USER ID PROVIDER (Framework Agnostic) ----
 
@@ -103,7 +116,6 @@ public class CustosAutoConfiguration {
                 havingValue = "memory",
                 matchIfMissing = true
         )
-        @ConditionalOnMissingBean
         public RateLimiterStrategy inMemoryTokenBucket() {
             return new TokenBucketStrategy();
         }
@@ -111,7 +123,6 @@ public class CustosAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
         @ConditionalOnClass(StringRedisTemplate.class)
-        @ConditionalOnMissingBean
         public RateLimiterStrategy redisTokenBucket(StringRedisTemplate redisTemplate) {
             return new RedisTokenBucketStrategy(redisTemplate);
         }
@@ -124,7 +135,6 @@ public class CustosAutoConfiguration {
                 havingValue = "memory",
                 matchIfMissing = true
         )
-        @ConditionalOnMissingBean
         public RateLimiterStrategy inMemorySlidingWindow() {
             return new SlidingWindowStrategy();
         }
@@ -132,7 +142,6 @@ public class CustosAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
         @ConditionalOnClass(StringRedisTemplate.class)
-        @ConditionalOnMissingBean
         public RateLimiterStrategy redisSlidingWindow(StringRedisTemplate redisTemplate) {
             return new RedisSlidingWindowStrategy(redisTemplate);
         }
@@ -145,7 +154,6 @@ public class CustosAutoConfiguration {
                 havingValue = "memory",
                 matchIfMissing = true
         )
-        @ConditionalOnMissingBean
         public RateLimiterStrategy inMemoryLeakyBucket() {
             return new LeakyBucketStrategy();
         }
@@ -153,7 +161,6 @@ public class CustosAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
         @ConditionalOnClass(StringRedisTemplate.class)
-        @ConditionalOnMissingBean
         public RateLimiterStrategy redisLeakyBucket(StringRedisTemplate redisTemplate) {
             return new RedisLeakyBucketStrategy(redisTemplate);
         }
@@ -165,7 +172,6 @@ public class CustosAutoConfiguration {
                 havingValue = "memory",
                 matchIfMissing = true
         )
-        @ConditionalOnMissingBean
         public RateLimiterStrategy inMemorySlidingWindowCounter() {
             return new SlidingWindowCounterStrategy();
         }
@@ -173,7 +179,6 @@ public class CustosAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "custos.store", havingValue = "redis")
         @ConditionalOnClass(StringRedisTemplate.class)
-        @ConditionalOnMissingBean
         public RateLimiterStrategy redisSlidingWindowCounter(StringRedisTemplate redisTemplate) {
             return new RedisSlidingWindowCounterStrategy(redisTemplate);
         }
@@ -197,10 +202,10 @@ public class CustosAutoConfiguration {
 
         //  ---------- STORE ----------
         @Bean
-        @ConditionalOnProperty(name = "custos.store", havingValue = "memory",  matchIfMissing = true)
         @ConditionalOnMissingBean
-        public RateLimitStore store() {return new InMemoryStore();}
-
+        public RateLimitStore store() {
+            return new InMemoryStore();
+        }
 
         // ---------- ENGINE ----------
 
@@ -221,4 +226,3 @@ public class CustosAutoConfiguration {
             );
         }
 }
-
