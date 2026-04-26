@@ -19,6 +19,10 @@ public class StrategyFactory {
     }
 
     public RateLimiterStrategy get(Algorithm algorithm) {
-        return strategyMap.get(algorithm);
+        RateLimiterStrategy strategy = strategyMap.get(algorithm);
+        if (strategy == null) {
+            throw new IllegalArgumentException("No RateLimiterStrategy found for Algorithm: " + algorithm);
+        }
+        return strategy;
     }
 }
