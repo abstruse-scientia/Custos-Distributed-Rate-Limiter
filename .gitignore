@@ -43,5 +43,8 @@ docs/
 deployment_strategy
 fix_documentation
 
+### Documentation Writing Guides ###
+doc_writing_guides/
+
 ### Logs ###
 *.log

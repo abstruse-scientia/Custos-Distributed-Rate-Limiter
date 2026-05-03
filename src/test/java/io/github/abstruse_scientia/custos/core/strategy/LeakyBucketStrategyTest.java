@@ -31,7 +31,7 @@ public class LeakyBucketStrategyTest {
     @Test
     public void testRequestQueueing() {
 
-        config = new RateLimitConfig(3, 0.0);
+        config = new RateLimitConfig(3, 0.00000000001);
         String userId = "user1";
 
         for (int i = 0; i < 3; i++) {
@@ -94,7 +94,7 @@ public class LeakyBucketStrategyTest {
 
     @Test
     public void testPerUserBuckets() {
-        config = new RateLimitConfig(3, 0.0);
+        config = new RateLimitConfig(3, 0.00000000001);
         String user1 = "user1";
         String user2 = "user2";
 
@@ -126,7 +126,7 @@ public class LeakyBucketStrategyTest {
 
     @Test
     public void testQueueCapacityExceeded() {
-        config = new RateLimitConfig(3, 0.0);
+        config = new RateLimitConfig(3, 0.01);
         String userId = "user1";
 
         for (int i = 0; i < 3; i++) {
