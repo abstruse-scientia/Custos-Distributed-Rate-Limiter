@@ -98,5 +98,21 @@ public class InMemoryStoreUnitTest {
         BucketState retrieved = (BucketState) store.get("nonexistent");
         assertThat(retrieved).isNull();
     }
-}
 
+    /**
+     * Test: Store handles various object types
+     * <p>Verify store can hold arbitrary objects (mimicking Test 40d strategy)</p>
+     */
+    @Test
+    public void testStoreHandlesVariousTypes() {
+        // Store different types
+        store.put("string-key", "string-value");
+        store.put("int-key", 42);
+        store.put("double-key", 3.14);
+        store.put("null-overwrite", "initial");
+
+        assertThat(store.get("string-key")).isEqualTo("string-value");
+        assertThat(store.get("int-key")).isEqualTo(42);
+        assertThat(store.get("double-key")).isEqualTo(3.14);
+    }
+}
