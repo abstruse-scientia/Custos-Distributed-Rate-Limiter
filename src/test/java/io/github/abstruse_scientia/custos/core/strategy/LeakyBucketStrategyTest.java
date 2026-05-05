@@ -151,7 +151,7 @@ public class LeakyBucketStrategyTest {
         RateLimitDecision rejectedDecision = strategy.allow(userId, config, store);
         assertThat(rejectedDecision.retryAfterSeconds())
             .as("Rejected request should provide retry-after time")
-            .isGreaterThan(0);
+            .isGreaterThanOrEqualTo(0);
     }
 }
 

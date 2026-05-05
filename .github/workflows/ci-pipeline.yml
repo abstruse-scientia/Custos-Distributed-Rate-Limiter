@@ -27,8 +27,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Build and Run Unit Tests
-        run: mvn  test -DskipITs=true
+      - name: Unit test
+        run: mvn  test -DskipITs=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true -nsu
 
   integration-test:
 #    needs: build-and-unit-test : let integration test run parallely to save time
