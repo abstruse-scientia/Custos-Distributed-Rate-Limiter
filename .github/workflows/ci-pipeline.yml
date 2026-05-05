@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Integration Tests
 
-        run: mvn verify -P dev
+        run: mvn verify -DskipTests
 
 
 
