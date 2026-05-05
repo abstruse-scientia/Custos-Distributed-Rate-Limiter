@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Integration Tests
 
-        run: mvn verify -Dsurefire.skip=true -Dgpg.skip=true
+        run: mvn verify -Dsurefire.skip=true -Dmaven.gpg.skip=true -Dskip.signing=true
 
 
 
