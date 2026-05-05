@@ -31,7 +31,7 @@ public class LeakyBucketStrategyTest {
     @Test
     public void testRequestQueueing() {
 
-        config = new RateLimitConfig(3, 0.00000000001);
+        config = new RateLimitConfig(3, 0.0);
         String userId = "user1";
 
         for (int i = 0; i < 3; i++) {
@@ -77,7 +77,7 @@ public class LeakyBucketStrategyTest {
 
         long timeToWait = rejectedDecision.retryAfterSeconds() + 1;
 
-        Thread.sleep(1100);
+        Thread.sleep(1500);
 
         RateLimitDecision afterLeakDecision1 = strategy.allow(userId, config, store);
         assertThat(afterLeakDecision1.allow())

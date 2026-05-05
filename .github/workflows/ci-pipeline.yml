@@ -28,10 +28,10 @@ jobs:
           cache: 'maven'
 
       - name: Build and Run Unit Tests
-        run: mvn clean test -DskipITs=true
+        run: mvn  test -DskipITs=true
 
   integration-test:
-    needs: build-and-unit-test
+#    needs: build-and-unit-test : let integration test run parallely to save time
     runs-on: ubuntu-latest
 
     steps:
