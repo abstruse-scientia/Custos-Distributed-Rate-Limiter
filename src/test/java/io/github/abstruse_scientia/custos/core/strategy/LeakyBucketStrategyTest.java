@@ -31,7 +31,7 @@ public class LeakyBucketStrategyTest {
     @Test
     public void testRequestQueueing() {
 
-        config = new RateLimitConfig(3, 0.0);
+        config = new RateLimitConfig(3, 0.0000100);
         String userId = "user1";
 
         for (int i = 0; i < 3; i++) {
