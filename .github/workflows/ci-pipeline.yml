@@ -1,6 +1,4 @@
 name: Custos CI Pipeline
-
-
 #The trigger (The "when")
 on:
   push:
