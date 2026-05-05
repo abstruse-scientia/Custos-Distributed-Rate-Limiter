@@ -362,21 +362,15 @@
     <!-- PROFILES -->
 
     <profiles>
-        <!-- Profile for skipping GPG during development -->
+
         <profile>
             <id>dev</id>
             <properties>
-                <skip.gpg>true</skip.gpg>
+                <maven.skip.gpg>true</maven.skip.gpg>
             </properties>
         </profile>
 
-        <!-- Profile for release enforces GPG signing -->
-        <profile>
-            <id>release</id>
-            <properties>
-                <skip.gpg>false</skip.gpg>
-            </properties>
-        </profile>
     </profiles>
+
 
 </project>
