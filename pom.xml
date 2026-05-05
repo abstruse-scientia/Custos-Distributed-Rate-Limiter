@@ -366,7 +366,9 @@
         <profile>
             <id>dev</id>
             <properties>
-                <maven.skip.gpg>true</maven.skip.gpg>
+                <gpg.skip>true</gpg.skip>
+                <maven.gpg.skip>true</maven.gpg.skip>
+                <skip.signing>true</skip.signing>
             </properties>
         </profile>
 
