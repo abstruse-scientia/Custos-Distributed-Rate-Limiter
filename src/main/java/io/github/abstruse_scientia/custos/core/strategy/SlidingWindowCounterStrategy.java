@@ -19,9 +19,8 @@ public class SlidingWindowCounterStrategy implements RateLimiterStrategy {
     @Override
     public RateLimitDecision allow(String key, RateLimitConfig config, RateLimitStore store) {
         final RateLimitDecision[] decisionHolder = new RateLimitDecision[1];
-        long currentMinute = System.currentTimeMillis() / 60000;
         store.atomicCompute(key, (k, currentState) -> {
-
+            long currentMinute = System.currentTimeMillis() / 60000;
             SlidingWindowCounterState state = currentState instanceof  SlidingWindowCounterState ?
                     (SlidingWindowCounterState) currentState : new SlidingWindowCounterState(currentMinute);
 
