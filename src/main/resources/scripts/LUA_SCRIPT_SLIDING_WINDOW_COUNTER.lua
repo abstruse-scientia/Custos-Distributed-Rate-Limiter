@@ -16,7 +16,7 @@ if estimated_total >= capacity then
     if current_window_count >= capacity then
         retry_after_seconds = 60 - current_second
     else
-        local weight_required = (capacity - current_second) / previous_window_count
+        local weight_required = (capacity - current_window_count) / previous_window_count
         local target_second = 60.0 - (weight_required * 60.0)
         retry_after_seconds = math.ceil(target_second - current_second) + 1
     end

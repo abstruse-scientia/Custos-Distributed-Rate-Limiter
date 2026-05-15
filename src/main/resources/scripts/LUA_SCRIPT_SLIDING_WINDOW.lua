@@ -22,6 +22,6 @@ else
     local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
     local oldestRequestTime = oldest[2]
     local timeUntilOldestExpires = (oldestRequestTime + windowDurationMs) - now
-    local retrySeconds = math.max(1, math.floor((timeUntilOldestExpires + 999) / 1000))
+    local retrySeconds = math.max(1, math.ceil(timeUntilOldestExpires / 1000))
     return {0, retrySeconds}
 end
