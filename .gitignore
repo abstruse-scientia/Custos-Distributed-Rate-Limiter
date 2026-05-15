@@ -39,7 +39,6 @@ build/
 .DS_Store
 
 ### Documentation ###
-docs/
 deployment_strategy
 fix_documentation
 

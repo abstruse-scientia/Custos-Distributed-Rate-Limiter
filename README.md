@@ -1,6 +1,6 @@
 # Custos
 
-Distributed, native Spring Boot rate limiting library. Zero Config. Zero Boilerplate.
+Distributed, native Spring Boot rate limiting library. All you have to do is add an annotation to your controller method.
 
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -21,12 +21,16 @@ Custos is distributed through [Maven Central](https://search.maven.org/):
 </dependency>
 ```
 
+##### Gradle
+```gradle
+implementation 'io.github.abstruse-scientia:custos:1.0.0'
+```
+
 ##### Java 8 dependencies
-Custos does not support Java 8. It is designed optimally for modern Spring Boot applications, leveraging modern Java features, and thus strictly requires **Java 17 or higher**.
+Custos doesn't support Java 8. It's built for modern Spring Boot applications using modern Java features, so it strictly requires **Java 17 or higher**. Frankly, if you're still on Java 8, rate limiting isn't your biggest problem right now.
 
 #### Quick start
-Custos removes the need for programmatic builder patterns entirely. Just add the `@RateLimit` annotation to any Spring method, and it is automatically protected.
-
+Add @Ratelimit to any spring method.Done.
 ```java
 import io.github.abstruse_scientia.custos.annotations.RateLimit;
 import io.github.abstruse_scientia.custos.core.model.Algorithm;
@@ -53,28 +57,28 @@ public class ApiController {
 }
 ```
 
-More examples [can be found in the examples directory](https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter/tree/main/examples).
+More examples [can be found in the examples directory](https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter/tree/main/examples). 
 
 ## [Documentation](https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter/tree/main/docs)
 * [Architecture & Flow](docs/ARCHITECTURE_AND_FLOW.md)
 * [Algorithms Explained](docs/ALGORITHMS_EXPLAINED.md)
 * [Integration Guides](docs/INTEGRATION_GUIDES.md)
 
-## Custos basic features
-* *Zero Boilerplate* - Custos removes the need for programmatic DSLs. Rate limiting is applied effortlessly using the `@RateLimit` annotation directly on your controllers or service methods.
-* *Pluggable Key Resolution* - Out of the box support for rate limiting by `USER` (via Spring Security Principal) or `IP` (via HTTP request) with the ability to inject custom extraction logic for either.
-* *Effective implementation in terms of concurrency*: Default in-memory stores use highly concurrent, thread-safe data structures (`ConcurrentHashMap`) for robust scaling in single-instance deployments without locking bottlenecks.
+## Custos features
+* *Zero Boilerplate* - Nobody likes writing DSL configuration. You can apply rate limiting perfectly by using the `@RateLimit` annotation directly on your controllers or service methods.
+* *Pluggable Key Resolution* - Out of the box, there is support rate limiting by `USER` (via Spring Security Principal) or `IP` (via HTTP request). You'll also get the ability to inject custom extraction logic for either.
+* *Effective implementation in terms of concurrency*: Default in memory stores rely on thread-safe data structures like `ConcurrentHashMap` for single-instance deployments without locking bottlenecks. 
 * *Multiple Algorithm Strategies*: Supports Token Bucket, Sliding Window, and Leaky Bucket algorithms natively. You can also deploy custom strategies cleanly via Spring's `@Component`.
-* *Graceful Exception Handling*: Automatically throws a dedicated `RateLimitExceededException` that includes metadata (like retry-after), allowing clean translation to HTTP 429 responses via standard `@ControllerAdvice`.
+* *Graceful Exception Handling*: Custos automatically throws a dedicated `RateLimitExceededException` that includes metadata like retry after.
 
 ## Custos distributed features
-In addition to  basic features described above, `Custos` provides the ability to implement rate-limiting in a cluster of JVMs:
+Besides the standard features, `Custos` gives you the ability to implement rate-limiting in a cluster of JVMs. Distributed state shouldn't give you a headache. 
 - *Native Redis Support* - No need for JCache wrappers or extensive middleware. By simply setting `custos.store=redis` in your `application.yml`, Custos acts as a cluster-ready distributed store.
-- *Atomic Lua Scripting* - Distributed rate limiting relies on Lua scripts executed atomically within Redis. This completely prevents Time-of-Check to Time-of-Use (TOCTOU) race conditions in high-throughput horizontal deployments.
-- *Fail-Closed By Default* - If Redis becomes unavailable , Spring Data will throw connection exception (for example: `RedisConnectionFailureException`) which will propagate uncaught through Custos, preventing silent limit bypasses. You should catch these exceptions in a @ControllerAdvice.
+- *Atomic Lua Scripting* - Distributed rate limiting relies on Lua scripts executed atomically within Redis. Check-and-set loops are for amateurs, so we completely prevent Time-of-Check to Time-of-Use (TOCTOU) race conditions in high-throughput horizontal deployments.
+- *Fail-Closed By Default* - If Redis becomes unavailable, Spring Data will throw a connection exception like `RedisConnectionFailureException`. This forces your hand to catch these exceptions in a @ControllerAdvice so you won't silently bypass limits.
 
 ## Contributing
-We welcome contributions! Please see our [Contributing Guide](docs/CONTRIBUTING_GUIDE.md) for details on how to get started, set up your local environment, and submit pull requests.
+Contributions are welcome. See the [Contributing Guide](docs/CONTRIBUTING_GUIDE.md) for details on how to get started, set up your local environment, and submit pull requests.
 
 ## Have a question?
 Feel free to ask via:
