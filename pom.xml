@@ -14,8 +14,8 @@
     <name>Custos Rate Limiter</name>
     <description>
         Lightweight, distributed rate limiter library for Spring Boot.
-        Provides zero boilerplate rate limiting with support for in-memory and Redis backends.
-        Includes Token Bucket and Sliding Window algorithms with atomic Lua-based operations.
+        Provides  rate limiting with support for in memory and Redis backends.
+        Includes Token Bucket, Sliding Window, Leaky Bucket, Sliding window counter algorithm with atomic Lua based operations.
     </description>
     <url>https://github.com/abstruse-scientia/Custos-Distributed-Rate-Limiter</url>
 
@@ -72,9 +72,6 @@
         <!-- Override transitive vulnerability in testcontainers -->
         <testcontainers.version>1.19.7</testcontainers.version>
 
-        <!-- Plugin versions for consistency -->
-        <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
-        <maven.javadoc.plugin.version>3.6.2</maven.javadoc.plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -261,13 +258,6 @@
                 </executions>
             </plugin>
 
-            <!-- DOCUMENTATION PLUGINS -->
-
-
-
-
-
-            <!-- COMPILATION & BUILD PLUGINS -->
 
             <!-- Maven Compiler Plugin -->
             <plugin>
